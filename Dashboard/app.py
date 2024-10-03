@@ -12,6 +12,10 @@ st.set_page_config(page_title="Bike Rental Dashboard", layout="wide")
 df_day = os.path.abspath("day.csv")
 df_hour = os.path.abspath("day.csv")
 
+# Baca file CSV
+df_day = pd.read_csv(day_file_path)
+df_hour = pd.read_csv(hour_file_path)
+
 #Membersihkan data
 df_day['dteday'] = pd.to_datetime(df_day['dteday'])
 df_hour['dteday'] = pd.to_datetime(df_hour['dteday'])
