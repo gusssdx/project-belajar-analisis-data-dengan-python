@@ -9,8 +9,8 @@ import seaborn as sns
 st.set_page_config(page_title="Bike Rental Dashboard", layout="wide")
 
 #Meload dataset
-df_day = os.path.abspath("day.csv")
-df_hour = os.path.abspath("day.csv")
+df_day = os.path.abspath("data/day.csv")
+df_hour = os.path.abspath("data/hour.csv")
 
 # Baca file CSV
 df_day = pd.read_csv(day_file_path)
