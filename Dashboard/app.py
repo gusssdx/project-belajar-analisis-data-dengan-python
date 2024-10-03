@@ -8,8 +8,8 @@ import seaborn as sns
 st.set_page_config(page_title="Bike Rental Dashboard", layout="wide")
 
 #Meload dataset
-df_day = pd.read_csv("day.csv")
-df_hour = pd.read_csv("hour.csv")
+df_day = os.path.abspath("day.csv")
+df_hour = os.path.abspath("day.csv")
 
 #Membersihkan data
 df_day['dteday'] = pd.to_datetime(df_day['dteday'])
