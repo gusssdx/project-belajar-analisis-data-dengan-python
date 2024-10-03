@@ -8,13 +8,9 @@ import seaborn as sns
 # Configurasi tampilan Streamlit
 st.set_page_config(page_title="Bike Rental Dashboard", layout="wide")
 
-#Meload dataset
-df_day = os.path.abspath("data/day.csv")
-df_hour = os.path.abspath("data/hour.csv")
-
 # Baca file CSV
-df_day = pd.read_csv(day_file_path)
-df_hour = pd.read_csv(hour_file_path)
+df_day = pd.read_csv("data/day.csv")
+df_hour = pd.read_csv("data/hour.csv")
 
 #Membersihkan data
 df_day['dteday'] = pd.to_datetime(df_day['dteday'])
