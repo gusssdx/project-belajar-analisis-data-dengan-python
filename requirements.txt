@@ -1,6 +1,6 @@
-numpy
-pandas
-matplotlib
-seaborn
-streamlit
-pillow
+numpy==1.26.0
+pandas==2.2.2
+matplotlib==3.7.1
+seaborn==0.12.2
+streamlit==1.25.0
+pillow==9.5.0
