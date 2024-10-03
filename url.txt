@@ -1,0 +1,1 @@
+https://bagus-bike-rental-app.streamlit.app/
