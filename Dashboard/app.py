@@ -1,5 +1,4 @@
 import streamlit as st
-import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,11 +7,11 @@ import seaborn as sns
 # Configurasi tampilan Streamlit
 st.set_page_config(page_title="Bike Rental Dashboard", layout="wide")
 
-# Baca file CSV
+# Meload dataset
 df_day = pd.read_csv('Data/day.csv')
 df_hour = pd.read_csv('Data/hour.csv')
 
-#Membersihkan data
+# Membersihkan data
 df_day['dteday'] = pd.to_datetime(df_day['dteday'])
 df_hour['dteday'] = pd.to_datetime(df_hour['dteday'])
 
@@ -22,8 +21,8 @@ df_hour.rename(columns={'hr':'hour', 'mnth':'month', 'yr':'year','temp':'tempera
 df_day['year'].replace({0: '2011', 1: '2012'}, inplace=True)
 df_hour['year'].replace({0: '2011', 1: '2012'}, inplace=True)
 
-df_day.drop(['instant'],axis=1, inplace=True)
-df_hour.drop(['instant'],axis=1, inplace=True)
+df_day.drop(['instant'], axis=1, inplace=True)
+df_hour.drop(['instant'], axis=1, inplace=True)
 
 # Normalisasi nilai temperature, atemp, humidity, dan windspeed
 df_day['temperature'] = df_hour['temperature'] * 41
@@ -35,7 +34,12 @@ df_hour['atemp'] = df_hour['atemp'] * 50
 df_hour['humidity'] = df_hour['humidity'] * 100  
 df_hour['windspeed'] = df_hour['windspeed'] * 67
 
-st.title("Bike Sharing Anlaysis")
+# Tambahkan kategori
+df_day['weekday'] = df_day['dteday'].dt.weekday  # Mengambil hari dalam seminggu
+df_day['season'] = df_day['season'].map({1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'})
+df_hour['season'] = df_hour['season'].map({1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'})
+
+st.title("Bike Sharing Analysis")
 # Sidebar untuk navigasi halaman
 st.sidebar.title("Navigasi")
 page = st.sidebar.selectbox("Pilih Visualisasi", ["Halaman Utama", "Total Rental Berdasarkan Hari",
@@ -46,7 +50,7 @@ page = st.sidebar.selectbox("Pilih Visualisasi", ["Halaman Utama", "Total Rental
 # Halaman Utama
 if page == "Halaman Utama":
     st.title("Selamat Datang di Bike Rental Dashboard")
-    st.write("""
+    st.write(""" 
     Dashboard ini menyediakan visualisasi yang interaktif untuk melihat data peminjaman sepeda berdasarkan:
     
     1. **Jumlah Total Rental Sepeda Berdasarkan Hari dalam Seminggu**
@@ -61,18 +65,22 @@ if page == "Halaman Utama":
 
 # Visualisasi pertama: Total Rental Berdasarkan Hari
 elif page == "Total Rental Berdasarkan Hari":
-    st.header("Pada hari apa saja rental sepeda meninggkat?")
-
+    st.header("Pada hari apa saja rental sepeda meningkat?")
+    
+    # Filter untuk hari dalam seminggu
+    weekday_options = st.sidebar.multiselect(
+        'Pilih Hari Dalam Seminggu',
+        options=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        default=['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+    )
+    
     # Mengelompokkan data berdasarkan weekday
-    weekday_rental = df_day.groupby('weekday').agg({'count': 'sum'}).reset_index()
-
-    # Menambahkan nama hari
+    weekday_rental = df_day[df_day['weekday'].isin([0, 1, 2, 3, 4, 5, 6])].groupby('weekday').agg({'count': 'sum'}).reset_index()
     weekday_rental['weekday_name'] = weekday_rental['weekday'].map({
         0: 'Monday', 1: 'Tuesday', 2: 'Wednesday', 3: 'Thursday', 
         4: 'Friday', 5: 'Saturday', 6: 'Sunday'
     })
-
-    weekday_rental = weekday_rental.sort_values('weekday')
+    weekday_rental = weekday_rental[weekday_rental['weekday_name'].isin(weekday_options)].sort_values('weekday')
 
     # Membuat barplot
     fig1, ax1 = plt.subplots(figsize=(10, 6))
@@ -86,9 +94,16 @@ elif page == "Total Rental Berdasarkan Hari":
 # Visualisasi kedua: Kelompok Penyewa Berdasarkan Jam
 elif page == "Kelompok Penyewa Berdasarkan Jam":
     st.header("Pada jam berapa saja rental sepeda meningkat?")
-
+    
+    # Filter untuk jam
+    hour_options = st.sidebar.multiselect(
+        'Pilih Jam',
+        options=list(range(24)),
+        default=list(range(24))
+    )
+    
     # Menghitung rata-rata penyewaan per jam
-    avg_hour = df_hour.groupby('hour')['count'].mean().reset_index()
+    avg_hour = df_hour[df_hour['hour'].isin(hour_options)].groupby('hour')['count'].mean().reset_index()
 
     # Menghitung Q1, Q3, dan IQR
     Q1 = avg_hour['count'].quantile(0.25)
@@ -111,18 +126,23 @@ elif page == "Kelompok Penyewa Berdasarkan Jam":
 elif page == "Pengaruh Musim Terhadap Peminjaman Sepeda":
     st.header("Bagaimana pengaruh musim terhadap tingkat peminjaman sepeda?")
 
+    # Filter untuk musim
+    season_options = st.sidebar.multiselect(
+        'Pilih Musim',
+        options=['Spring', 'Summer', 'Fall', 'Winter'],
+        default=['Spring', 'Summer', 'Fall', 'Winter']
+    )
+
     # Memetakan season dengan nama musim
-    df_day['season'] = df_day['season'].map({1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'})
+    df_day_filtered = df_day[df_day['season'].isin(season_options)]
 
     # Menghitung statistik deskriptif dari peminjaman sepeda berdasarkan musim
-    weather_stats = df_day.groupby('season')['count'].describe()
+    weather_stats = df_day_filtered.groupby('season')['count'].describe()
 
-    #Membuat Boxplot
-    #Plot peminjaman rental permusim dengan boxplot
-    fig3, ax3= plt.subplots(figsize=(10, 6))
-    sns.boxplot(x='season', y='count', data=df_day, palette='Reds', ax=ax3)
-    # Menambahkan judul dan label sumbu
-    ax3.set_title('Boxplot Peminjalam Sepeda Permusim')
+    # Membuat Boxplot
+    fig3, ax3 = plt.subplots(figsize=(10, 6))
+    sns.boxplot(x='season', y='count', data=df_day_filtered, palette='Reds', ax=ax3)
+    ax3.set_title('Boxplot Peminjaman Sepeda Permusim')
     ax3.set_xlabel('Season')
     ax3.set_ylabel('Bike Rentals')
     st.pyplot(fig3)
@@ -138,10 +158,9 @@ elif page == "Pengaruh Cuaca Dengan Jumlah Peminjam":
     
     # Plot peminjaman sepeda berdasarkan cuaca
     fig4, ax4 = plt.subplots(figsize=(10, 6))
-    sns.barplot(x='weathersit', y='count', data=weather_avg, palette='Reds', ax=ax4)
-    ax4.set_title('Rata-rata Peminjaman Sepeda Berdasarkan Cuaca')
-    ax4.set_xlabel('Season')
-    ax4.set_ylabel('Average Rentals')
+    plt.pie(weather_avg['count'], labels=weather_avg['weathersit'], autopct='%1.1f%%', startangle=140, colors=sns.color_palette("Reds", n_colors=len(weather_avg)))
+    ax4.set_title('Plot Peminjaman Sepeda Berdasarkan Cuaca')
+    plt.axis('equal')  # Agar pie chart berbentuk lingkaran
     st.pyplot(fig4)
 
 #Visualisasi kelima : Bagimanan Perbedaan Jumlah Peminjaman Berdasarkan Jenis Pengguna
@@ -149,15 +168,14 @@ elif page == "Perbedaan Jumlah Peminjaman Berdasarkan Jenis Pengguna":
     st.header("Bagimana Perbedaan Jumlah Peminjaman Berdasarkan Jenis Pengguna?")
 
     # Menghitung rata-rata peminjaman berdasarkan pengguna casual dan registered
-    user_type = df_day[['casual', 'registered']].mean().reset_index()
-    user_type.columns = ['user_type', 'avg_rentals']
+    user_type_rentals = df_day[['casual', 'registered']].mean().reset_index()
+    user_type_rentals.columns = ['user_type', 'avg_rentals']
 
     # Membuat barplot untuk membandingkan rata-rata peminjaman sepeda
     fig5, ax5 = plt.subplots(figsize=(8, 5))
-    sns.barplot(x='user_type', y='avg_rentals', data=user_type, palette='Reds', ax=ax5)
+    plt.pie(user_type_rentals['avg_rentals'], labels=user_type_rentals['user_type'], autopct='%1.1f%%', startangle=140, colors=sns.color_palette("Reds", n_colors=len(user_type_rentals)))
     ax5.set_title('Perbandingan Peminjaman Sepeda antara Pengguna Casual dan Registered')
-    ax5.set_xlabel('Tipe Pengguna')
-    ax5.set_ylabel('Rata-rata Peminjaman Sepeda')
+    plt.axis('equal')  # Agar pie chart berbentuk lingkaran
     st.pyplot(fig5)
 
 #Visualasasi keenam: Analisis RFM untuk pengguna registered
@@ -186,5 +204,4 @@ elif page == "RFM Analisis Pengguna":
         ax6.set_xlabel(xlabel)
         ax6.set_ylabel('Jumlah Pengguna')
         st.pyplot(fig6)
-
 
